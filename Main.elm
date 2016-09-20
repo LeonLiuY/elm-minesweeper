@@ -1,41 +1,66 @@
+module Main exposing (..)
+
 import Html exposing (Html, button, div, text)
 import Html.App as App
-import Html.Events exposing (onClick)
+import Cell exposing (CellValue(..), CellStatus(..))
 
 
 main =
-  App.beginnerProgram { model = model, view = view, update = update }
+    App.beginnerProgram { model = init, view = view, update = update }
 
 
 -- MODEL
 
-type alias Model = Int
+type alias ID= Int
 
-model : Model
-model =
-  0
+type alias Model ={
+    cells: List (ID, Cell.Model),
+    nextID : ID
+  }
+
+
+init: Model
+
+init = {
+  cells = [(0, {value = Mine, status = Marked}),
+  (1, {value = Mine, status = Covered}),
+  (2, {value = Mine, status = Opened}),
+  (3, {value = Mine, status = Marked})],
+  nextID = 4
+  }
+
 
 
 -- UPDATE
 
-type Msg = Increment | Decrement
+
+type Msg
+    = Action ID Cell.Msg
+
 
 update : Msg -> Model -> Model
 update msg model =
   case msg of
-    Increment ->
-      model + 1
+    Action id cellMsg ->
+    let updateCell (cellID, cellModel) =
+      if cellID == id then
+        (cellID, Cell.update cellMsg cellModel)
+        else
+          (cellID, cellModel)
+          in
+      {model | cells = List.map updateCell model.cells}
 
-    Decrement ->
-      model - 1
 
 
 -- VIEW
 
+
 view : Model -> Html Msg
 view model =
-  div []
-    [ button [ onClick Decrement ] [ text "-" ]
-    , div [] [ text (toString model) ]
-    , button [ onClick Increment ] [ text "+" ]
-    ]
+  div
+  []
+    <| List.map viewCell model.cells
+
+viewCell : ( ID, Cell.Model ) -> Html Msg
+viewCell (id, model) =
+  App.map (Action id) (Cell.view model)
