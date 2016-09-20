@@ -1,14 +1,21 @@
 module Main exposing (..)
 
-import Html exposing (Html, button, div, text)
+import Html exposing (Html, button, div, text, tr, table)
+import Html.Attributes  exposing(style)
 import Html.App as App
 import Cell exposing (CellValue(..), CellStatus(..))
+import MapGenerator exposing(..)
+import Random exposing(generate)
+import Debug
+import Set exposing(Set)
 
 
 main =
-    App.beginnerProgram { model = init, view = view, update = update }
+    App.program { init = init, view = view, update = update, subscriptions = subscriptions }
 
-
+subscriptions : Model -> Sub Msg
+subscriptions model =
+  Sub.none
 
 -- MODEL
 
@@ -17,22 +24,32 @@ type alias ID =
     Int
 
 
+type alias CellRow =
+    List ( ID, Cell.Model )
+
+
 type alias Model =
-    { cells : List ( ID, Cell.Model )
-    , nextID : ID
-    }
+    List ( ID, CellRow )
 
 
-init : Model
+gameSize =
+    9
+
+mineCount = 10
+
+init : (Model, Cmd Msg)
 init =
-    { cells =
-        [ ( 0, { value = Mine, status = Marked } )
-        , ( 1, { value = Mine, status = Covered } )
-        , ( 2, { value = Mine, status = Opened } )
-        , ( 3, { value = Mine, status = Marked } )
-        ]
-    , nextID = 4
-    }
+    (List.map initRow [1..gameSize], generate (\set -> Start set) <| unique 10 (Random.int 1 100))
+
+
+initRow : Int -> ( ID, CellRow )
+initRow idx =
+    ( idx, List.map initCell [1..gameSize] )
+
+
+initCell : Int -> ( ID, Cell.Model )
+initCell idx =
+    ( idx, { value = Mine, status = Covered, raised = False } )
 
 
 
@@ -40,21 +57,39 @@ init =
 
 
 type Msg
-    = Action ID Cell.Msg
+    = Action ID ID Cell.Msg |
+      Start (Set Int)
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
-        Action id cellMsg ->
+        Start list ->
+          let one = Debug.log (toString list)  1
+          in
+          (model, Cmd.none)
+        Action row col cellMsg ->
             let
-                updateCell ( cellID, cellModel ) =
-                    if cellID == id then
-                        ( cellID, Cell.update cellMsg cellModel )
+                updateCol ( colID, cell ) =
+                    if (colID == col) then
+                        ( colID, Cell.update cellMsg cell )
                     else
-                        ( cellID, cellModel )
+                        ( colID, cell )
+
+                updateRow ( rowID, cells ) =
+                    if rowID == row then
+                        ( rowID
+                        , (List.map
+                            updateCol
+                            cells
+                          )
+                        )
+                    else
+                        ( rowID, cells )
             in
-                { model | cells = List.map updateCell model.cells }
+                (List.map
+                    updateRow
+                    model, Cmd.none)
 
 
 
@@ -63,12 +98,24 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    div
-        []
-    <|
-        List.map viewCell model.cells
+    div [style [("position", "absolute"), ("top", "0"), ("right", "0"), ("bottom", "0"), ("left", "0"), ("background", "#EEEEEE")]]
+        [ table
+            [style [("margin", "128px auto 0 auto")]]
+          <|
+            List.map viewCellRow model
+        ]
 
 
-viewCell : ( ID, Cell.Model ) -> Html Msg
-viewCell ( id, model ) =
-    App.map (Action id) (Cell.view model)
+viewCellRow : ( ID, CellRow ) -> Html Msg
+viewCellRow ( row, cells ) =
+    tr [] <|
+        List.map
+            (\( col, cell ) ->
+                viewCell row col cell
+            )
+            cells
+
+
+viewCell : ID -> ID -> Cell.Model -> Html Msg
+viewCell row col cell =
+    App.map (Action row col) (Cell.view cell)

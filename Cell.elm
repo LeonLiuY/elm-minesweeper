@@ -20,6 +20,7 @@ type CellStatus
 type alias Cell =
     { value : CellValue
     , status : CellStatus
+    , raised : Bool
     }
 
 
@@ -30,6 +31,8 @@ type alias Model =
 type Msg
     = Open
     | ToggleMark
+    | Raise
+    | Drop
     | NoOp
 
 
@@ -48,6 +51,16 @@ update msg model =
                         Marked
             }
 
+        Raise ->
+            { model
+                | raised = True
+            }
+
+        Drop ->
+            { model
+                | raised = False
+            }
+
         NoOp ->
             model
 
@@ -55,10 +68,10 @@ update msg model =
 styles =
     let
         size =
-            "24px"
+            "48px"
 
         common' =
-            [ ( "width", size ), ( "height", size ) ]
+            [ ( "width", size ), ( "height", size ), ("background", "#FFFFFF"), ("cursor", "pointer")]
     in
         { common = common'
         , marked = ( "background", "red" ) :: common'
@@ -67,12 +80,17 @@ styles =
 
 view : Model -> Html Msg
 view model =
+    let shadowStyle = if model.raised then
+      ( "box-shadow", "0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22)" )
+      else
+        ( "box-shadow", "0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)" )
+        in
     case model.status of
         Covered ->
-            td [ style styles.common, onClick Open, (onWithOptions "contextmenu" { defaultOptions | preventDefault = True } (succeed ToggleMark)) ] []
+            td [ style (shadowStyle :: styles.common), onMouseEnter Raise, onMouseLeave Drop, onClick Open, (onWithOptions "contextmenu" { defaultOptions | preventDefault = True } (succeed ToggleMark)) ] []
 
         Opened ->
-            td [ style styles.common, (onWithOptions "contextmenu" { defaultOptions | preventDefault = True } (succeed NoOp)) ] []
+            td [ style (shadowStyle :: styles.common), (onWithOptions "contextmenu" { defaultOptions | preventDefault = True } (succeed NoOp)) ] []
 
         Marked ->
-            td [ style styles.marked, (onWithOptions "contextmenu" { defaultOptions | preventDefault = True } (succeed ToggleMark)) ] []
+            td [ style (shadowStyle :: styles.marked), onMouseEnter Raise, onMouseLeave Drop, (onWithOptions "contextmenu" { defaultOptions | preventDefault = True } (succeed ToggleMark)) ] []
