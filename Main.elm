@@ -3,11 +3,13 @@ module Main exposing (..)
 import Html exposing (Html, button, div, text, tr, table)
 import Html.Attributes exposing (style)
 import Html.App as App
-import Cell exposing (CellValue(..), CellStatus(..))
+import Cell exposing (CellValue(..), CellStatus(..), Msg(..))
 import MineGenerator exposing (..)
 import Random exposing (generate)
-import Debug
 import Set exposing (Set)
+import Platform.Cmd
+import List exposing (..)
+import Debug
 
 
 main =
@@ -62,22 +64,138 @@ genMap mines =
                     if Set.member ( row, col ) mines then
                         { raised = False, status = Covered, value = Mine }
                     else
-                        { raised = False, status = Covered, value = Mine }
+                        { raised = False
+                        , status = Covered
+                        , value =
+                            Number <|
+                                Set.size <|
+                                    Set.intersect mines <|
+                                        Set.fromList
+                                            [ ( row - 1, col - 1 )
+                                            , ( row, col - 1 )
+                                            , ( row + 1, col - 1 )
+                                            , ( row - 1, col )
+                                            , ( row + 1, col )
+                                            , ( row - 1, col + 1 )
+                                            , ( row, col + 1 )
+                                            , ( row + 1, col + 1 )
+                                            ]
+                        }
                 )
                 [0..gameSize - 1]
         )
         [0..gameSize - 1]
 
 
+clearZero : Model -> Model
+clearZero model =
+    let
+        one =
+            Debug.log ("toString a") 1
+
+        fill =
+            { raised = False, status = Covered, value = Number -1 }
+
+        fillRow =
+            repeat gameSize fill
+
+        top =
+            fillRow :: model
+
+        bottom =
+            drop 1 model `append` [ fillRow ]
+
+        newModel =
+            map3
+                (\a b c ->
+                    let
+                        newRow1 =
+                            map3
+                                (\x y z ->
+                                    if
+                                        x.status
+                                            /= Opened
+                                            && ((y.status == Opened && y.value == Number 0)
+                                                    || (z.status == Opened && z.value == Number 0)
+                                               )
+                                    then
+                                        ( { x | status = Opened }, x.value == Number 0 )
+                                    else
+                                        ( x, False )
+                                )
+                                a
+                                (fill :: a)
+                                (drop 1 a `append` [ fill ])
+
+                        newRow2 =
+                            map4
+                                (\( x, more ) y z w ->
+                                    if
+                                        x.status
+                                            /= Opened
+                                            && ((y.status == Opened && y.value == Number 0)
+                                                    || (z.status == Opened && z.value == Number 0)
+                                                    || (w.status == Opened && w.value == Number 0)
+                                               )
+                                    then
+                                        ( { x | status = Opened }, x.value == Number 0 )
+                                    else
+                                        ( x, more )
+                                )
+                                newRow1
+                                b
+                                (fill :: b)
+                                (drop 1 b `append` [ fill ])
+
+                        newRow =
+                            map4
+                                (\( x, more ) y z w ->
+                                    if
+                                        x.status
+                                            /= Opened
+                                            && ((y.status == Opened && y.value == Number 0)
+                                                    || (z.status == Opened && z.value == Number 0)
+                                                    || (w.status == Opened && w.value == Number 0)
+                                               )
+                                    then
+                                        ( { x | status = Opened }, x.value == Number 0 )
+                                    else
+                                        ( x, more )
+                                )
+                                newRow2
+                                c
+                                (fill :: c)
+                                (drop 1 c `append` [ fill ])
+
+                        ( result, moreList ) =
+                            unzip newRow
+
+                        more =
+                            foldl (||) False moreList
+                    in
+                        ( result, more )
+                )
+                model
+                top
+                bottom
+
+        ( result, moreList ) =
+            unzip newModel
+
+        more =
+            foldl (||) False moreList
+    in
+        if more then
+            clearZero result
+        else
+            result
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Start mines ->
-            let
-                one =
-                    Debug.log (toString mines) 1
-            in
-                ( genMap mines, Cmd.none )
+            ( genMap mines, Cmd.none )
 
         Action row col cellMsg ->
             let
@@ -95,11 +213,17 @@ update msg model =
                         )
                     else
                         cells
+
+                newModel =
+                    List.indexedMap
+                        updateRow
+                        model
             in
-                ( List.indexedMap
-                    updateRow
-                    model
-                , Cmd.none
+                ( if cellMsg == Open then
+                    clearZero newModel
+                  else
+                    newModel
+                , (Cmd.none)
                 )
 
 
