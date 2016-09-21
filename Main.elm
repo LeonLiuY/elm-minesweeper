@@ -9,9 +9,9 @@ import Random exposing (generate)
 import Set exposing (Set)
 import Platform.Cmd
 import List exposing (..)
-import Debug
 
 
+main : Program Never
 main =
     App.program { init = init, view = view, update = update, subscriptions = subscriptions }
 
@@ -33,10 +33,12 @@ type alias Model =
     List CellRow
 
 
+gameSize : number
 gameSize =
     9
 
 
+mineCount : number
 mineCount =
     10
 
@@ -90,9 +92,6 @@ genMap mines =
 clearZero : Model -> Model
 clearZero model =
     let
-        one =
-            Debug.log ("toString a") 1
-
         fill =
             { raised = False, status = Covered, value = Number -1 }
 
@@ -105,90 +104,56 @@ clearZero model =
         bottom =
             drop 1 model `append` [ fillRow ]
 
-        newModel =
-            map3
-                (\a b c ->
-                    let
-                        newRow1 =
-                            map3
-                                (\x y z ->
-                                    if
-                                        x.status
-                                            /= Opened
-                                            && ((y.status == Opened && y.value == Number 0)
-                                                    || (z.status == Opened && z.value == Number 0)
-                                               )
-                                    then
-                                        ( { x | status = Opened }, x.value == Number 0 )
-                                    else
-                                        ( x, False )
-                                )
-                                a
-                                (fill :: a)
-                                (drop 1 a `append` [ fill ])
+        ( newModel, moreList ) =
+            unzip <|
+                map3
+                    (\origin top bottom ->
+                        let
+                            types =
+                                [ (fill :: origin)
+                                , (drop 1 origin `append` [ fill ])
+                                , top
+                                , (fill :: top)
+                                , (drop 1 top `append` [ fill ])
+                                , bottom
+                                , (fill :: bottom)
+                                , (drop 1 bottom `append` [ fill ])
+                                ]
 
-                        newRow2 =
-                            map4
-                                (\( x, more ) y z w ->
-                                    if
-                                        x.status
-                                            /= Opened
-                                            && ((y.status == Opened && y.value == Number 0)
-                                                    || (z.status == Opened && z.value == Number 0)
-                                                    || (w.status == Opened && w.value == Number 0)
-                                               )
-                                    then
-                                        ( { x | status = Opened }, x.value == Number 0 )
-                                    else
-                                        ( x, more )
-                                )
-                                newRow1
-                                b
-                                (fill :: b)
-                                (drop 1 b `append` [ fill ])
-
-                        newRow =
-                            map4
-                                (\( x, more ) y z w ->
-                                    if
-                                        x.status
-                                            /= Opened
-                                            && ((y.status == Opened && y.value == Number 0)
-                                                    || (z.status == Opened && z.value == Number 0)
-                                                    || (w.status == Opened && w.value == Number 0)
-                                               )
-                                    then
-                                        ( { x | status = Opened }, x.value == Number 0 )
-                                    else
-                                        ( x, more )
-                                )
-                                newRow2
-                                c
-                                (fill :: c)
-                                (drop 1 c `append` [ fill ])
-
-                        ( result, moreList ) =
-                            unzip newRow
-
-                        more =
-                            foldl (||) False moreList
-                    in
-                        ( result, more )
-                )
-                model
-                top
-                bottom
-
-        ( result, moreList ) =
-            unzip newModel
+                            ( newRow, more ) =
+                                foldl
+                                    (\check ( target, more ) ->
+                                        let
+                                            ( newRow, moreList ) =
+                                                unzip <|
+                                                    map2
+                                                        (\check target ->
+                                                            if target.status /= Opened && check.status == Opened && check.value == Number 0 then
+                                                                ( { target | status = Opened }, target.value == Number 0 )
+                                                            else
+                                                                ( target, False )
+                                                        )
+                                                        check
+                                                        target
+                                        in
+                                            ( newRow, foldl (||) more moreList )
+                                    )
+                                    ( origin, False )
+                                    types
+                        in
+                            ( newRow, more )
+                    )
+                    model
+                    top
+                    bottom
 
         more =
             foldl (||) False moreList
     in
         if more then
-            clearZero result
+            clearZero newModel
         else
-            result
+            newModel
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )

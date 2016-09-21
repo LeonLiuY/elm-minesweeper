@@ -65,6 +65,11 @@ update msg model =
             model
 
 
+styles :
+    { covered : List ( String, String )
+    , opened : List ( String, String )
+    , marked : List ( String, String )
+    }
 styles =
     let
         size =
