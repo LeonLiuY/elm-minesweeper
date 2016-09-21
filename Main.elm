@@ -1,21 +1,24 @@
 module Main exposing (..)
 
 import Html exposing (Html, button, div, text, tr, table)
-import Html.Attributes  exposing(style)
+import Html.Attributes exposing (style)
 import Html.App as App
 import Cell exposing (CellValue(..), CellStatus(..))
-import MapGenerator exposing(..)
-import Random exposing(generate)
+import MineGenerator exposing (..)
+import Random exposing (generate)
 import Debug
-import Set exposing(Set)
+import Set exposing (Set)
 
 
 main =
     App.program { init = init, view = view, update = update, subscriptions = subscriptions }
 
+
 subscriptions : Model -> Sub Msg
 subscriptions model =
-  Sub.none
+    Sub.none
+
+
 
 -- MODEL
 
@@ -35,11 +38,14 @@ type alias Model =
 gameSize =
     9
 
-mineCount = 10
 
-init : (Model, Cmd Msg)
+mineCount =
+    10
+
+
+init : ( Model, Cmd Msg )
 init =
-    (List.map initRow [1..gameSize], generate (\set -> Start set) <| unique 10 (Random.int 1 100))
+    ( List.map initRow [1..gameSize], generate (\mines -> Start mines) <| mines mineCount (Random.pair (Random.int 1 9) (Random.int 1 9)) )
 
 
 initRow : Int -> ( ID, CellRow )
@@ -57,17 +63,20 @@ initCell idx =
 
 
 type Msg
-    = Action ID ID Cell.Msg |
-      Start (Set Int)
+    = Action ID ID Cell.Msg
+    | Start (Set ( Int, Int ))
 
 
-update : Msg -> Model -> (Model, Cmd Msg)
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Start list ->
-          let one = Debug.log (toString list)  1
-          in
-          (model, Cmd.none)
+            let
+                one =
+                    Debug.log (toString list) 1
+            in
+                ( model, Cmd.none )
+
         Action row col cellMsg ->
             let
                 updateCol ( colID, cell ) =
@@ -87,9 +96,11 @@ update msg model =
                     else
                         ( rowID, cells )
             in
-                (List.map
+                ( List.map
                     updateRow
-                    model, Cmd.none)
+                    model
+                , Cmd.none
+                )
 
 
 
@@ -98,9 +109,9 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    div [style [("position", "absolute"), ("top", "0"), ("right", "0"), ("bottom", "0"), ("left", "0"), ("background", "#EEEEEE")]]
+    div [ style [ ( "position", "absolute" ), ( "top", "0" ), ( "right", "0" ), ( "bottom", "0" ), ( "left", "0" ), ( "background", "#EEEEEE" ) ] ]
         [ table
-            [style [("margin", "128px auto 0 auto")]]
+            [ style [ ( "margin", "128px auto 0 auto" ) ] ]
           <|
             List.map viewCellRow model
         ]
