@@ -23,16 +23,12 @@ subscriptions model =
 -- MODEL
 
 
-type alias ID =
-    Int
-
-
 type alias CellRow =
-    List ( ID, Cell.Model )
+    List Cell.Model
 
 
 type alias Model =
-    List ( ID, CellRow )
+    List CellRow
 
 
 gameSize =
@@ -45,17 +41,7 @@ mineCount =
 
 init : ( Model, Cmd Msg )
 init =
-    ( List.map initRow [1..gameSize], generate (\mines -> Start mines) <| mines mineCount (Random.pair (Random.int 1 9) (Random.int 1 9)) )
-
-
-initRow : Int -> ( ID, CellRow )
-initRow idx =
-    ( idx, List.map initCell [1..gameSize] )
-
-
-initCell : Int -> ( ID, Cell.Model )
-initCell idx =
-    ( idx, { value = Mine, status = Covered, raised = False } )
+    ( [], generate (\mines -> Start mines) <| mines mineCount (Random.pair (Random.int 0 (gameSize - 1)) (Random.int 0 (gameSize - 1))) )
 
 
 
@@ -63,40 +49,54 @@ initCell idx =
 
 
 type Msg
-    = Action ID ID Cell.Msg
+    = Action Int Int Cell.Msg
     | Start (Set ( Int, Int ))
+
+
+genMap : Set ( Int, Int ) -> Model
+genMap mines =
+    List.map
+        (\row ->
+            List.map
+                (\col ->
+                    if Set.member ( row, col ) mines then
+                        { raised = False, status = Covered, value = Mine }
+                    else
+                        { raised = False, status = Covered, value = Mine }
+                )
+                [0..gameSize - 1]
+        )
+        [0..gameSize - 1]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Start list ->
+        Start mines ->
             let
                 one =
-                    Debug.log (toString list) 1
+                    Debug.log (toString mines) 1
             in
-                ( model, Cmd.none )
+                ( genMap mines, Cmd.none )
 
         Action row col cellMsg ->
             let
-                updateCol ( colID, cell ) =
+                updateCol colID cell =
                     if (colID == col) then
-                        ( colID, Cell.update cellMsg cell )
+                        Cell.update cellMsg cell
                     else
-                        ( colID, cell )
+                        cell
 
-                updateRow ( rowID, cells ) =
+                updateRow rowID cells =
                     if rowID == row then
-                        ( rowID
-                        , (List.map
+                        (List.indexedMap
                             updateCol
                             cells
-                          )
                         )
                     else
-                        ( rowID, cells )
+                        cells
             in
-                ( List.map
+                ( List.indexedMap
                     updateRow
                     model
                 , Cmd.none
@@ -113,20 +113,18 @@ view model =
         [ table
             [ style [ ( "margin", "128px auto 0 auto" ) ] ]
           <|
-            List.map viewCellRow model
+            List.indexedMap viewCellRow model
         ]
 
 
-viewCellRow : ( ID, CellRow ) -> Html Msg
-viewCellRow ( row, cells ) =
+viewCellRow : Int -> CellRow -> Html Msg
+viewCellRow row cells =
     tr [] <|
-        List.map
-            (\( col, cell ) ->
-                viewCell row col cell
-            )
+        List.indexedMap
+            (viewCell row)
             cells
 
 
-viewCell : ID -> ID -> Cell.Model -> Html Msg
+viewCell : Int -> Int -> Cell.Model -> Html Msg
 viewCell row col cell =
     App.map (Action row col) (Cell.view cell)
