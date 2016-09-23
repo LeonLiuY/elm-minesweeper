@@ -1,6 +1,6 @@
 module Main exposing (..)
 
-import Html exposing (Html, button, div, text, tr, table)
+import Html exposing (Html, button, div, text, tr, table, span)
 import Html.Attributes exposing (style)
 import Html.App as App
 import Cell exposing (CellValue(..), CellStatus(..), Msg(..))
@@ -198,9 +198,25 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    div [ style [ ( "position", "absolute" ), ( "top", "0" ), ( "right", "0" ), ( "bottom", "0" ), ( "left", "0" ), ( "background", "#EEEEEE" ) ] ]
-        [ table
-            [ style [ ( "margin", "128px auto 0 auto" ) ] ]
+    div
+        [ style
+            [ ( "position", "absolute" )
+            , ( "top", "0" )
+            , ( "right", "0" )
+            , ( "bottom", "0" )
+            , ( "left", "0" )
+            , ( "background", "#EEEEEE" )
+            , ( "display", "flex")
+            , ( "flex-direction", "column")
+            , ( "align-items", "center")
+            ]
+        ]
+        [ div [style [("margin", "128px 0 24px 0")] ]
+            [ span [style [("margin-right", "24px")]] [ text <| "Game size: " ++ (toString gameSize) ++ " x " ++ (toString gameSize) ]
+            , span [] [ text <| "Total mines: " ++ (toString mineCount) ]
+            ]
+        , table
+            []
           <|
             List.indexedMap viewCellRow model
         ]
