@@ -1,0 +1,8 @@
+image: codesimple/elm:0.17
+
+before_script:
+  - elm-package install -y
+
+build:
+  script:
+    - elm-make Main.elm
