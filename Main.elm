@@ -2,6 +2,7 @@ module Main exposing (..)
 
 import Html exposing (Html, button, div, text, tr, table, span)
 import Html.Attributes exposing (style)
+import Html.Events exposing (..)
 import Html.App as App
 import Cell exposing (CellValue(..), CellStatus(..), Msg(..))
 import MineGenerator exposing (..)
@@ -54,7 +55,9 @@ init =
 
 type Msg
     = Action Int Int Cell.Msg
+    | NewGame
     | Start (Set ( Int, Int ))
+    | NoOp Cell.Msg
 
 
 genMap : Set ( Int, Int ) -> Model
@@ -191,45 +194,131 @@ update msg model =
                 , (Cmd.none)
                 )
 
+        NewGame ->
+            init
+
+        NoOp cellMsg ->
+            ( model, Cmd.none )
+
 
 
 -- VIEW
 
 
+type GameStatus
+    = Normal
+    | Over
+    | Success
+
+
+status : Model -> GameStatus
+status model =
+    if
+        List.any
+            (\row ->
+                List.any
+                    (\cell ->
+                        cell.status == Opened && cell.value == Mine
+                    )
+                    row
+            )
+            model
+    then
+        Over
+    else if
+        List.all
+            (\row ->
+                List.all
+                    (\cell ->
+                        (cell.status == Opened && cell.value /= Mine) || (cell.status == Marked && cell.value == Mine)
+                    )
+                    row
+            )
+            model
+    then
+        Success
+    else
+        Normal
+
+
 view : Model -> Html Msg
 view model =
-    div
-        [ style
-            [ ( "position", "absolute" )
-            , ( "top", "0" )
-            , ( "right", "0" )
-            , ( "bottom", "0" )
-            , ( "left", "0" )
-            , ( "background", "#EEEEEE" )
-            , ( "display", "flex")
-            , ( "flex-direction", "column")
-            , ( "align-items", "center")
+    let
+        gameStatus =
+            status model
+
+        common =
+            [ div [ style [ ( "margin", "128px 0 24px 0" ) ] ]
+                [ span [ style [ ( "margin-right", "24px" ) ] ] [ text <| "Game size: " ++ (toString gameSize) ++ " x " ++ (toString gameSize) ]
+                , span []
+                    [ text <| "Total mines: " ++ (toString mineCount)
+                    , div
+                        [ style
+                            [ ( "margin-left", "24px" )
+                            , ( "display", "inline-block" )
+                            , ( "position", "relative" )
+                            , ( "width", "120px" )
+                            , ( "height", "32px" )
+                            , ( "line-height", "32px" )
+                            , ( "border-radius", "2px" )
+                            , ( "font-size", "0.9em" )
+                            , ( "color", "#fff" )
+                            , ( "background-color", "#4CAF50" )
+                            , ( "box-shadow", "0 2px 5px 0 rgba(0, 0, 0, 0.26)" )
+                            , ( "text-align", "center" )
+                            , ( "cursor", "pointer" )
+                            ]
+                        , onClick NewGame
+                        ]
+                        [ text "New Game" ]
+                    ]
+                ]
+            , table
+                []
+              <|
+                List.indexedMap (viewCellRow gameStatus) model
             ]
-        ]
-        [ div [style [("margin", "128px 0 24px 0")] ]
-            [ span [style [("margin-right", "24px")]] [ text <| "Game size: " ++ (toString gameSize) ++ " x " ++ (toString gameSize) ]
-            , span [] [ text <| "Total mines: " ++ (toString mineCount) ]
+    in
+        div
+            [ style
+                [ ( "position", "absolute" )
+                , ( "top", "0" )
+                , ( "right", "0" )
+                , ( "bottom", "0" )
+                , ( "left", "0" )
+                , ( "background", "#EEEEEE" )
+                , ( "display", "flex" )
+                , ( "flex-direction", "column" )
+                , ( "align-items", "center" )
+                ]
             ]
-        , table
-            []
-          <|
-            List.indexedMap viewCellRow model
-        ]
+            (case gameStatus of
+                Normal ->
+                    common
+
+                Success ->
+                    common `append` [ div [ style [ ( "color", "#4CAF50" ), ( "margin", "24px 0" ) ] ] [ text "You win!" ] ]
+
+                Over ->
+                    common `append` [ div [ style [ ( "color", "#E91E63" ), ( "margin", "24px 0" ) ] ] [ text "Game over!" ] ]
+            )
 
 
-viewCellRow : Int -> CellRow -> Html Msg
-viewCellRow row cells =
+viewCellRow : GameStatus -> Int -> CellRow -> Html Msg
+viewCellRow gameStatus row cells =
     tr [] <|
         List.indexedMap
-            (viewCell row)
+            (viewCell gameStatus row)
             cells
 
 
-viewCell : Int -> Int -> Cell.Model -> Html Msg
-viewCell row col cell =
-    App.map (Action row col) (Cell.view cell)
+viewCell : GameStatus -> Int -> Int -> Cell.Model -> Html Msg
+viewCell gameStatus row col cell =
+    let
+        mapper =
+            if gameStatus == Normal then
+                Action row col
+            else
+                NoOp
+    in
+        App.map mapper (Cell.view cell)
