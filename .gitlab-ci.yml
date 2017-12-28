@@ -1,4 +1,4 @@
-image: codesimple/elm:0.17
+image: codesimple/elm:0.18
 
 before_script:
   - elm-package install -y
