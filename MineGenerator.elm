@@ -12,8 +12,8 @@ mines size generator =
                 map (\_ -> set) bool
             else
                 generator
-                    `andThen`
-                        \val ->
+                    |> andThen
+                        (\val ->
                             let
                                 newSet =
                                     Set.insert val set
@@ -22,5 +22,6 @@ mines size generator =
                                     helper set remaining
                                 else
                                     helper newSet (remaining - 1)
+                        )
     in
         helper Set.empty size

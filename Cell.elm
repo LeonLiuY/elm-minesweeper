@@ -75,12 +75,12 @@ styles =
         size =
             "48px"
 
-        common' =
+        common_ =
             [ ( "width", size ), ( "height", size ), ( "cursor", "pointer" ), ( "text-align", "center" ) ]
     in
-        { covered = ( "background", "#FFFFFF" ) :: common'
-        , marked = ( "background", "#E91E63" ) :: common'
-        , opened = ( "background", "#EEEEEE" ) :: common'
+        { covered = ( "background", "#FFFFFF" ) :: common_
+        , marked = ( "background", "#E91E63" ) :: common_
+        , opened = ( "background", "#EEEEEE" ) :: common_
         }
 
 

@@ -3,7 +3,6 @@ module Main exposing (..)
 import Html exposing (Html, button, div, text, tr, table, span)
 import Html.Attributes exposing (style)
 import Html.Events exposing (..)
-import Html.App as App
 import Cell exposing (CellValue(..), CellStatus(..), Msg(..))
 import MineGenerator exposing (..)
 import Random exposing (generate)
@@ -11,10 +10,9 @@ import Set exposing (Set)
 import Platform.Cmd
 import List exposing (..)
 
-
-main : Program Never
+main : Program Never Model Msg
 main =
-    App.program { init = init, view = view, update = update, subscriptions = subscriptions }
+    Html.program { init = init, view = view, update = update, subscriptions = subscriptions }
 
 
 subscriptions : Model -> Sub Msg
@@ -87,9 +85,9 @@ genMap mines =
                                             ]
                         }
                 )
-                [0..gameSize - 1]
+                (List.range 0 (gameSize - 1))
         )
-        [0..gameSize - 1]
+        (List.range 0 (gameSize - 1))
 
 
 clearZero : Model -> Model
@@ -105,7 +103,7 @@ clearZero model =
             fillRow :: model
 
         bottom =
-            drop 1 model `append` [ fillRow ]
+            append (drop 1 model) [ fillRow ]
 
         ( newModel, moreList ) =
             unzip <|
@@ -114,13 +112,13 @@ clearZero model =
                         let
                             types =
                                 [ (fill :: origin)
-                                , (drop 1 origin `append` [ fill ])
+                                , (append (drop 1 origin) [ fill ])
                                 , top
                                 , (fill :: top)
-                                , (drop 1 top `append` [ fill ])
+                                , (append (drop 1 top) [ fill ])
                                 , bottom
                                 , (fill :: bottom)
-                                , (drop 1 bottom `append` [ fill ])
+                                , (append (drop 1 bottom) [ fill ])
                                 ]
 
                             ( newRow, more ) =
@@ -297,10 +295,10 @@ view model =
                     common
 
                 Success ->
-                    common `append` [ div [ style [ ( "color", "#4CAF50" ), ( "margin", "24px 0" ) ] ] [ text "You win!" ] ]
+                    append common [ div [ style [ ( "color", "#4CAF50" ), ( "margin", "24px 0" ) ] ] [ text "You win!" ] ]
 
                 Over ->
-                    common `append` [ div [ style [ ( "color", "#E91E63" ), ( "margin", "24px 0" ) ] ] [ text "Game over!" ] ]
+                    append common [ div [ style [ ( "color", "#E91E63" ), ( "margin", "24px 0" ) ] ] [ text "Game over!" ] ]
             )
 
 
@@ -321,4 +319,4 @@ viewCell gameStatus row col cell =
             else
                 NoOp
     in
-        App.map mapper (Cell.view cell)
+        Html.map mapper (Cell.view cell)
