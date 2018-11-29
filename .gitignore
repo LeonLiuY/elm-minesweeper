@@ -1,5 +1,6 @@
 .vscode/
+node_modules/
 
 elm-stuff/
 index.html
-elm.js
+main.js

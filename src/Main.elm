@@ -1,18 +1,19 @@
-module Main exposing (..)
+module Main exposing (CellRow, GameStatus(..), Model, Msg(..), clearZero, gameSize, genMap, init, main, mineCount, status, subscriptions, update, view, viewCell, viewCellRow)
 
-import Html exposing (Html, button, div, text, tr, table, span)
+import Cell exposing (CellStatus(..), CellValue(..), Msg(..))
+import Html exposing (Html, button, div, span, table, text, tr)
 import Html.Attributes exposing (style)
 import Html.Events exposing (..)
-import Cell exposing (CellValue(..), CellStatus(..), Msg(..))
+import List exposing (..)
 import MineGenerator exposing (..)
+import Platform.Cmd
 import Random exposing (generate)
 import Set exposing (Set)
-import Platform.Cmd
-import List exposing (..)
+import Browser
 
-main : Program Never Model Msg
+main : Program (Maybe Int) Model Msg
 main =
-    Html.program { init = init, view = view, update = update, subscriptions = subscriptions }
+    Browser.document { init = init, view = view, update = update, subscriptions = subscriptions }
 
 
 subscriptions : Model -> Sub Msg
@@ -42,8 +43,8 @@ mineCount =
     10
 
 
-init : ( Model, Cmd Msg )
-init =
+init : Maybe Int -> ( Model, Cmd Msg )
+init flags =
     ( [], generate (\mines -> Start mines) <| mines mineCount (Random.pair (Random.int 0 (gameSize - 1)) (Random.int 0 (gameSize - 1))) )
 
 
@@ -66,6 +67,7 @@ genMap mines =
                 (\col ->
                     if Set.member ( row, col ) mines then
                         { raised = False, status = Covered, value = Mine }
+
                     else
                         { raised = False
                         , status = Covered
@@ -108,41 +110,39 @@ clearZero model =
         ( newModel, moreList ) =
             unzip <|
                 map3
-                    (\origin top bottom ->
+                    (\origin top1 bottom1 ->
                         let
                             types =
-                                [ (fill :: origin)
-                                , (append (drop 1 origin) [ fill ])
-                                , top
-                                , (fill :: top)
-                                , (append (drop 1 top) [ fill ])
-                                , bottom
-                                , (fill :: bottom)
-                                , (append (drop 1 bottom) [ fill ])
-                                ]
-
-                            ( newRow, more ) =
-                                foldl
-                                    (\check ( target, more ) ->
+                                [ fill :: origin
+                                , append (drop 1 origin) [ fill ]
+                                , top1
+                                , fill :: top1
+                                , append (drop 1 top1) [ fill ]
+                                , bottom1
+                                , fill :: bottom1
+                                , append (drop 1 bottom1) [ fill ]
+                                ]    
+                        in
+                            foldl
+                                    (\check ( target, more1 ) ->
                                         let
-                                            ( newRow, moreList ) =
+                                            ( newRow, moreList1 ) =
                                                 unzip <|
                                                     map2
-                                                        (\check target ->
-                                                            if target.status /= Opened && check.status == Opened && check.value == Number 0 then
-                                                                ( { target | status = Opened }, target.value == Number 0 )
+                                                        (\check1 target1 ->
+                                                            if target1.status /= Opened && check1.status == Opened && check1.value == Number 0 then
+                                                                ( { target1 | status = Opened }, target1.value == Number 0 )
+
                                                             else
-                                                                ( target, False )
+                                                                ( target1, False )
                                                         )
                                                         check
                                                         target
                                         in
-                                            ( newRow, foldl (||) more moreList )
+                                        ( newRow, foldl (||) more1 moreList1 )
                                     )
                                     ( origin, False )
                                     types
-                        in
-                            ( newRow, more )
                     )
                     model
                     top
@@ -151,10 +151,11 @@ clearZero model =
         more =
             foldl (||) False moreList
     in
-        if more then
-            clearZero newModel
-        else
-            newModel
+    if more then
+        clearZero newModel
+
+    else
+        newModel
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -166,17 +167,18 @@ update msg model =
         Action row col cellMsg ->
             let
                 updateCol colID cell =
-                    if (colID == col) then
+                    if colID == col then
                         Cell.update cellMsg cell
+
                     else
                         cell
 
                 updateRow rowID cells =
                     if rowID == row then
-                        (List.indexedMap
+                        List.indexedMap
                             updateCol
                             cells
-                        )
+
                     else
                         cells
 
@@ -185,15 +187,16 @@ update msg model =
                         updateRow
                         model
             in
-                ( if cellMsg == Open then
-                    clearZero newModel
-                  else
-                    newModel
-                , (Cmd.none)
-                )
+            ( if cellMsg == Open then
+                clearZero newModel
+
+              else
+                newModel
+            , Cmd.none
+            )
 
         NewGame ->
-            init
+            init Nothing
 
         NoOp cellMsg ->
             ( model, Cmd.none )
@@ -223,6 +226,7 @@ status model =
             model
     then
         Over
+
     else if
         List.all
             (\row ->
@@ -235,37 +239,36 @@ status model =
             model
     then
         Success
+
     else
         Normal
 
 
-view : Model -> Html Msg
+view : Model -> Browser.Document Msg
 view model =
     let
         gameStatus =
             status model
 
         common =
-            [ div [ style [ ( "margin", "128px 0 24px 0" ) ] ]
-                [ span [ style [ ( "margin-right", "24px" ) ] ] [ text <| "Game size: " ++ (toString gameSize) ++ " x " ++ (toString gameSize) ]
+            [ div [ style "margin" "128px 0 24px 0" ]
+                [ span [ style "margin-right" "24px" ] [ text <| "Game size: " ++ String.fromInt gameSize ++ " x " ++ String.fromInt gameSize ]
                 , span []
-                    [ text <| "Total mines: " ++ (toString mineCount)
+                    [ text <| "Total mines: " ++ String.fromInt mineCount
                     , div
-                        [ style
-                            [ ( "margin-left", "24px" )
-                            , ( "display", "inline-block" )
-                            , ( "position", "relative" )
-                            , ( "width", "120px" )
-                            , ( "height", "32px" )
-                            , ( "line-height", "32px" )
-                            , ( "border-radius", "2px" )
-                            , ( "font-size", "0.9em" )
-                            , ( "color", "#fff" )
-                            , ( "background-color", "#4CAF50" )
-                            , ( "box-shadow", "0 2px 5px 0 rgba(0, 0, 0, 0.26)" )
-                            , ( "text-align", "center" )
-                            , ( "cursor", "pointer" )
-                            ]
+                        [ style "margin-left" "24px"
+                        , style "display" "inline-block"
+                        , style "position" "relative"
+                        , style "width" "120px"
+                        , style "height" "32px"
+                        , style "line-height" "32px"
+                        , style "border-radius" "2px"
+                        , style "font-size" "0.9em"
+                        , style "color" "#fff"
+                        , style "background-color" "#4CAF50"
+                        , style "box-shadow" "0 2px 5px 0 rgba(0, 0, 0, 0.26)"
+                        , style "text-align" "center"
+                        , style "cursor" "pointer"
                         , onClick NewGame
                         ]
                         [ text "New Game" ]
@@ -277,29 +280,31 @@ view model =
                 List.indexedMap (viewCellRow gameStatus) model
             ]
     in
-        div
-            [ style
-                [ ( "position", "absolute" )
-                , ( "top", "0" )
-                , ( "right", "0" )
-                , ( "bottom", "0" )
-                , ( "left", "0" )
-                , ( "background", "#EEEEEE" )
-                , ( "display", "flex" )
-                , ( "flex-direction", "column" )
-                , ( "align-items", "center" )
-                ]
-            ]
-            (case gameStatus of
-                Normal ->
-                    common
+    {
+        title = "Minesweeper",
+    body = [div
+        [ style "position" "absolute"
+        , style "top" "0"
+        , style "right" "0"
+        , style "bottom" "0"
+        , style "left" "0"
+        , style "background" "#EEEEEE"
+        , style "display" "flex"
+        , style "flex-direction" "column"
+        , style "align-items" "center"
+        ]
+        (case gameStatus of
+            Normal ->
+                common
 
-                Success ->
-                    append common [ div [ style [ ( "color", "#4CAF50" ), ( "margin", "24px 0" ) ] ] [ text "You win!" ] ]
+            Success ->
+                append common [ div [ style "color" "#4CAF50", style "margin" "24px 0" ] [ text "You win!" ] ]
 
-                Over ->
-                    append common [ div [ style [ ( "color", "#E91E63" ), ( "margin", "24px 0" ) ] ] [ text "Game over!" ] ]
-            )
+            Over ->
+                append common [ div [ style "color" "#E91E63", style "margin" "24px 0" ] [ text "Game over!" ] ]
+        )]
+    }
+    
 
 
 viewCellRow : GameStatus -> Int -> CellRow -> Html Msg
@@ -316,7 +321,8 @@ viewCell gameStatus row col cell =
         mapper =
             if gameStatus == Normal then
                 Action row col
+
             else
                 NoOp
     in
-        Html.map mapper (Cell.view cell)
+    Html.map mapper (Cell.view cell)
