@@ -3,9 +3,20 @@ module MineGenerator exposing (mines)
 import Random exposing (..)
 import Set exposing (Set)
 
-bool: Generator Bool
-bool = 
-    map (\i -> if i < 1 then True else False) <| int 0 1
+
+bool : Generator Bool
+bool =
+    map
+        (\i ->
+            if i < 1 then
+                True
+
+            else
+                False
+        )
+    <|
+        int 0 1
+
 
 mines : Int -> Generator comparable -> Generator (Set comparable)
 mines size generator =

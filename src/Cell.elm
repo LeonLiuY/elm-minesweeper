@@ -5,6 +5,7 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Json.Decode as Json
 
+
 type CellValue
     = Mine
     | Number Int
@@ -64,21 +65,24 @@ update msg model =
         NoOp ->
             model
 
+
 alwaysPreventDefault : msg -> ( msg, Bool )
 alwaysPreventDefault msg =
-  ( msg, True )
+    ( msg, True )
+
 
 view : Model -> Html Msg
 view model =
     let
-        contextmenu msg = preventDefaultOn "contextmenu" (Json.map alwaysPreventDefault (Json.succeed msg))
+        contextmenu msg =
+            preventDefaultOn "contextmenu" (Json.map alwaysPreventDefault (Json.succeed msg))
     in
     case model.status of
         Covered ->
-            td [ classList [("covered", True), ("raised", model.raised)], onMouseEnter Raise, onMouseLeave Drop, onClick Open, contextmenu ToggleMark ] []
+            td [ classList [ ( "covered", True ), ( "raised", model.raised ) ], onMouseEnter Raise, onMouseLeave Drop, onClick Open, contextmenu ToggleMark ] []
 
         Opened ->
-            td [ classList [("opened", True)],  contextmenu NoOp]
+            td [ classList [ ( "opened", True ) ], contextmenu NoOp ]
                 [ text <|
                     case model.value of
                         Mine ->
@@ -89,4 +93,4 @@ view model =
                 ]
 
         Marked ->
-            td [ classList [("marked", True), ("raised", model.raised)], onMouseEnter Raise, onMouseLeave Drop, contextmenu ToggleMark ] []
+            td [ classList [ ( "marked", True ), ( "raised", model.raised ) ], onMouseEnter Raise, onMouseLeave Drop, contextmenu ToggleMark ] []

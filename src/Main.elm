@@ -1,5 +1,6 @@
 module Main exposing (CellRow, GameStatus(..), Model, Msg(..), clearZero, gameSize, genMap, init, main, mineCount, status, subscriptions, update, view, viewCell, viewCellRow)
 
+import Browser
 import Cell exposing (CellStatus(..), CellValue(..), Msg(..))
 import Html exposing (Html, button, div, span, table, text, tr)
 import Html.Attributes exposing (style)
@@ -9,7 +10,7 @@ import MineGenerator exposing (..)
 import Platform.Cmd
 import Random exposing (generate)
 import Set exposing (Set)
-import Browser
+
 
 main : Program (Maybe Int) Model Msg
 main =
@@ -121,28 +122,28 @@ clearZero model =
                                 , bottom1
                                 , fill :: bottom1
                                 , append (drop 1 bottom1) [ fill ]
-                                ]    
+                                ]
                         in
-                            foldl
-                                    (\check ( target, more1 ) ->
-                                        let
-                                            ( newRow, moreList1 ) =
-                                                unzip <|
-                                                    map2
-                                                        (\check1 target1 ->
-                                                            if target1.status /= Opened && check1.status == Opened && check1.value == Number 0 then
-                                                                ( { target1 | status = Opened }, target1.value == Number 0 )
+                        foldl
+                            (\check ( target, more1 ) ->
+                                let
+                                    ( newRow, moreList1 ) =
+                                        unzip <|
+                                            map2
+                                                (\check1 target1 ->
+                                                    if target1.status /= Opened && check1.status == Opened && check1.value == Number 0 then
+                                                        ( { target1 | status = Opened }, target1.value == Number 0 )
 
-                                                            else
-                                                                ( target1, False )
-                                                        )
-                                                        check
-                                                        target
-                                        in
-                                        ( newRow, foldl (||) more1 moreList1 )
-                                    )
-                                    ( origin, False )
-                                    types
+                                                    else
+                                                        ( target1, False )
+                                                )
+                                                check
+                                                target
+                                in
+                                ( newRow, foldl (||) more1 moreList1 )
+                            )
+                            ( origin, False )
+                            types
                     )
                     model
                     top
@@ -280,31 +281,31 @@ view model =
                 List.indexedMap (viewCellRow gameStatus) model
             ]
     in
-    {
-        title = "Minesweeper",
-    body = [div
-        [ style "position" "absolute"
-        , style "top" "0"
-        , style "right" "0"
-        , style "bottom" "0"
-        , style "left" "0"
-        , style "background" "#EEEEEE"
-        , style "display" "flex"
-        , style "flex-direction" "column"
-        , style "align-items" "center"
+    { title = "Minesweeper"
+    , body =
+        [ div
+            [ style "position" "absolute"
+            , style "top" "0"
+            , style "right" "0"
+            , style "bottom" "0"
+            , style "left" "0"
+            , style "background" "#EEEEEE"
+            , style "display" "flex"
+            , style "flex-direction" "column"
+            , style "align-items" "center"
+            ]
+            (case gameStatus of
+                Normal ->
+                    common
+
+                Success ->
+                    append common [ div [ style "color" "#4CAF50", style "margin" "24px 0" ] [ text "You win!" ] ]
+
+                Over ->
+                    append common [ div [ style "color" "#E91E63", style "margin" "24px 0" ] [ text "Game over!" ] ]
+            )
         ]
-        (case gameStatus of
-            Normal ->
-                common
-
-            Success ->
-                append common [ div [ style "color" "#4CAF50", style "margin" "24px 0" ] [ text "You win!" ] ]
-
-            Over ->
-                append common [ div [ style "color" "#E91E63", style "margin" "24px 0" ] [ text "Game over!" ] ]
-        )]
     }
-    
 
 
 viewCellRow : GameStatus -> Int -> CellRow -> Html Msg
