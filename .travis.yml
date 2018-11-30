@@ -14,4 +14,4 @@ install: # install specific versions of elm & elm-test
   - npm install -g elm@$ELM_VERSION
 
 script:
-  - elm-make src/Main.elm
+  - elm make src/Main.elm
