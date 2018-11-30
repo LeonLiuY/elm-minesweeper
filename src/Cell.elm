@@ -86,7 +86,7 @@ view model =
                 [ text <|
                     case model.value of
                         Mine ->
-                            "*"
+                            "💣"
 
                         Number n ->
                             String.fromInt n
