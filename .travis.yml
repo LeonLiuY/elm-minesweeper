@@ -12,16 +12,15 @@ cache:
 
 install: # install specific versions of elm & elm-test
   - npm install -g elm@$ELM_VERSION
+  - npm install -g uglify-js
 
 script:
-  - elm make src/Main.elm --output main.js
-  - mkdir deploy
-  - cp index.html main.js main.css deploy/
+  - ./build.sh
 
 deploy:
   provider: pages
   skip-cleanup: true
-  local-dir: deploy
+  local-dir: build
   github-token: $GITHUB_TOKEN  # Set in the settings page of your repository, as a secure variable
   keep-history: true
   on:
