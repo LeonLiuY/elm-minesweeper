@@ -1,4 +1,4 @@
-module Main exposing (CellRow, GameStatus(..), Model, Msg(..), clearZero, gameSize, genMap, init, main, mineCount, status, subscriptions, update, view, viewCell, viewCellRow)
+module Main exposing (..)
 
 import Browser
 import Cell exposing (CellStatus(..), CellValue(..), Msg(..))
@@ -30,23 +30,21 @@ type alias CellRow =
     List Cell.Model
 
 
+type alias Board = List CellRow
+
 type alias Model =
-    List CellRow
-
-
-gameSize : number
-gameSize =
-    9
-
-
-mineCount : number
-mineCount =
-    10
-
+    { gameSize : Int
+    , mineCount : Int
+    , board : Board
+    }
 
 init : Maybe Int -> ( Model, Cmd Msg )
 init flags =
-    ( [], generate (\mines -> Start mines) <| mines mineCount (Random.pair (Random.int 0 (gameSize - 1)) (Random.int 0 (gameSize - 1))) )
+    let gameSize = 9
+        mineCount = 9
+    in
+    ( { gameSize = gameSize, mineCount=  mineCount, board= []}, 
+    generate (\mines -> Start mines) <| mines mineCount (Random.pair (Random.int 0 (gameSize - 1)) (Random.int 0 (gameSize - 1))) )
 
 
 
@@ -60,8 +58,8 @@ type Msg
     | NoOp Cell.Msg
 
 
-genMap : Set ( Int, Int ) -> Model
-genMap mines =
+genMap : Set ( Int, Int ) -> Int -> Board
+genMap mines gameSize =
     List.map
         (\row ->
             List.map
@@ -93,8 +91,8 @@ genMap mines =
         (List.range 0 (gameSize - 1))
 
 
-clearZero : Model -> Model
-clearZero model =
+clearZero : Board -> Int -> Board
+clearZero model gameSize =
     let
         fill =
             { raised = False, status = Covered, value = Number -1 }
@@ -153,7 +151,7 @@ clearZero model =
             foldl (||) False moreList
     in
     if more then
-        clearZero newModel
+        clearZero newModel gameSize
 
     else
         newModel
@@ -163,7 +161,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Start mines ->
-            ( genMap mines, Cmd.none )
+            ( {model | board = genMap mines model.gameSize}, Cmd.none )
 
         Action row col cellMsg ->
             let
@@ -183,16 +181,16 @@ update msg model =
                     else
                         cells
 
-                newModel =
+                newBoard =
                     List.indexedMap
                         updateRow
-                        model
+                        model.board
             in
             ( if cellMsg == Open then
-                clearZero newModel
+                {model | board = clearZero newBoard model.gameSize}
 
               else
-                newModel
+                {model | board = newBoard}
             , Cmd.none
             )
 
@@ -213,8 +211,8 @@ type GameStatus
     | Success
 
 
-status : Model -> GameStatus
-status model =
+status : Board -> GameStatus
+status board =
     if
         List.any
             (\row ->
@@ -224,7 +222,7 @@ status model =
                     )
                     row
             )
-            model
+            board
     then
         Over
 
@@ -237,7 +235,7 @@ status model =
                     )
                     row
             )
-            model
+            board
     then
         Success
 
@@ -249,13 +247,13 @@ view : Model -> Browser.Document Msg
 view model =
     let
         gameStatus =
-            status model
+            status model.board
 
         common =
             [ div [ style "margin" "128px 0 24px 0" ]
-                [ span [ style "margin-right" "24px" ] [ text <| "Game size: " ++ String.fromInt gameSize ++ " x " ++ String.fromInt gameSize ]
+                [ span [ style "margin-right" "24px" ] [ text <| "Game size: " ++ String.fromInt model.gameSize ++ " x " ++ String.fromInt model.gameSize ]
                 , span []
-                    [ text <| "Total mines: " ++ String.fromInt mineCount
+                    [ text <| "Total mines: " ++ String.fromInt model.mineCount
                     , div
                         [ style "margin-left" "24px"
                         , style "display" "inline-block"
@@ -278,7 +276,7 @@ view model =
             , table
                 []
               <|
-                List.indexedMap (viewCellRow gameStatus) model
+                List.indexedMap (viewCellRow gameStatus) model.board
             ]
     in
     { title = "Minesweeper"
