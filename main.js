@@ -4384,8 +4384,6 @@ function _Browser_load(url)
 var author$project$Main$Start = function (a) {
 	return {$: 'Start', a: a};
 };
-var author$project$Main$gameSize = 9;
-var author$project$Main$mineCount = 10;
 var elm$core$Basics$False = {$: 'False'};
 var elm$core$Basics$True = {$: 'True'};
 var elm$core$Basics$apL = F2(
@@ -5230,8 +5228,10 @@ var elm$random$Random$pair = F2(
 			genB);
 	});
 var author$project$Main$init = function (flags) {
+	var mineCount = 9;
+	var gameSize = 9;
 	return _Utils_Tuple2(
-		_List_Nil,
+		{board: _List_Nil, gameSize: gameSize, mineCount: mineCount},
 		A2(
 			elm$random$Random$generate,
 			function (mines) {
@@ -5239,11 +5239,11 @@ var author$project$Main$init = function (flags) {
 			},
 			A2(
 				author$project$MineGenerator$mines,
-				author$project$Main$mineCount,
+				mineCount,
 				A2(
 					elm$random$Random$pair,
-					A2(elm$random$Random$int, 0, author$project$Main$gameSize - 1),
-					A2(elm$random$Random$int, 0, author$project$Main$gameSize - 1)))));
+					A2(elm$random$Random$int, 0, gameSize - 1),
+					A2(elm$random$Random$int, 0, gameSize - 1)))));
 };
 var elm$core$Platform$Sub$batch = _Platform_batch;
 var elm$core$Platform$Sub$none = elm$core$Platform$Sub$batch(_List_Nil);
@@ -5406,96 +5406,99 @@ var elm$core$List$unzip = function (pairs) {
 		_Utils_Tuple2(_List_Nil, _List_Nil),
 		pairs);
 };
-var author$project$Main$clearZero = function (model) {
-	clearZero:
-	while (true) {
-		var fill = {
-			raised: false,
-			status: author$project$Cell$Covered,
-			value: author$project$Cell$Number(-1)
-		};
-		var fillRow = A2(elm$core$List$repeat, author$project$Main$gameSize, fill);
-		var top = A2(elm$core$List$cons, fillRow, model);
-		var bottom = A2(
-			elm$core$List$append,
-			A2(elm$core$List$drop, 1, model),
-			_List_fromArray(
-				[fillRow]));
-		var _n0 = elm$core$List$unzip(
-			A4(
-				elm$core$List$map3,
-				F3(
-					function (origin, top1, bottom1) {
-						var types = _List_fromArray(
-							[
-								A2(elm$core$List$cons, fill, origin),
-								A2(
-								elm$core$List$append,
-								A2(elm$core$List$drop, 1, origin),
-								_List_fromArray(
-									[fill])),
-								top1,
-								A2(elm$core$List$cons, fill, top1),
-								A2(
-								elm$core$List$append,
-								A2(elm$core$List$drop, 1, top1),
-								_List_fromArray(
-									[fill])),
-								bottom1,
-								A2(elm$core$List$cons, fill, bottom1),
-								A2(
-								elm$core$List$append,
-								A2(elm$core$List$drop, 1, bottom1),
-								_List_fromArray(
-									[fill]))
-							]);
-						return A3(
-							elm$core$List$foldl,
-							F2(
-								function (check, _n1) {
-									var target = _n1.a;
-									var more1 = _n1.b;
-									var _n2 = elm$core$List$unzip(
-										A3(
-											elm$core$List$map2,
-											F2(
-												function (check1, target1) {
-													return ((!_Utils_eq(target1.status, author$project$Cell$Opened)) && (_Utils_eq(check1.status, author$project$Cell$Opened) && _Utils_eq(
-														check1.value,
-														author$project$Cell$Number(0)))) ? _Utils_Tuple2(
-														_Utils_update(
-															target1,
-															{status: author$project$Cell$Opened}),
-														_Utils_eq(
-															target1.value,
-															author$project$Cell$Number(0))) : _Utils_Tuple2(target1, false);
-												}),
-											check,
-											target));
-									var newRow = _n2.a;
-									var moreList1 = _n2.b;
-									return _Utils_Tuple2(
-										newRow,
-										A3(elm$core$List$foldl, elm$core$Basics$or, more1, moreList1));
-								}),
-							_Utils_Tuple2(origin, false),
-							types);
-					}),
-				model,
-				top,
-				bottom));
-		var newModel = _n0.a;
-		var moreList = _n0.b;
-		var more = A3(elm$core$List$foldl, elm$core$Basics$or, false, moreList);
-		if (more) {
-			var $temp$model = newModel;
-			model = $temp$model;
-			continue clearZero;
-		} else {
-			return newModel;
+var author$project$Main$clearZero = F2(
+	function (model, gameSize) {
+		clearZero:
+		while (true) {
+			var fill = {
+				raised: false,
+				status: author$project$Cell$Covered,
+				value: author$project$Cell$Number(-1)
+			};
+			var fillRow = A2(elm$core$List$repeat, gameSize, fill);
+			var top = A2(elm$core$List$cons, fillRow, model);
+			var bottom = A2(
+				elm$core$List$append,
+				A2(elm$core$List$drop, 1, model),
+				_List_fromArray(
+					[fillRow]));
+			var _n0 = elm$core$List$unzip(
+				A4(
+					elm$core$List$map3,
+					F3(
+						function (origin, top1, bottom1) {
+							var types = _List_fromArray(
+								[
+									A2(elm$core$List$cons, fill, origin),
+									A2(
+									elm$core$List$append,
+									A2(elm$core$List$drop, 1, origin),
+									_List_fromArray(
+										[fill])),
+									top1,
+									A2(elm$core$List$cons, fill, top1),
+									A2(
+									elm$core$List$append,
+									A2(elm$core$List$drop, 1, top1),
+									_List_fromArray(
+										[fill])),
+									bottom1,
+									A2(elm$core$List$cons, fill, bottom1),
+									A2(
+									elm$core$List$append,
+									A2(elm$core$List$drop, 1, bottom1),
+									_List_fromArray(
+										[fill]))
+								]);
+							return A3(
+								elm$core$List$foldl,
+								F2(
+									function (check, _n1) {
+										var target = _n1.a;
+										var more1 = _n1.b;
+										var _n2 = elm$core$List$unzip(
+											A3(
+												elm$core$List$map2,
+												F2(
+													function (check1, target1) {
+														return ((!_Utils_eq(target1.status, author$project$Cell$Opened)) && (_Utils_eq(check1.status, author$project$Cell$Opened) && _Utils_eq(
+															check1.value,
+															author$project$Cell$Number(0)))) ? _Utils_Tuple2(
+															_Utils_update(
+																target1,
+																{status: author$project$Cell$Opened}),
+															_Utils_eq(
+																target1.value,
+																author$project$Cell$Number(0))) : _Utils_Tuple2(target1, false);
+													}),
+												check,
+												target));
+										var newRow = _n2.a;
+										var moreList1 = _n2.b;
+										return _Utils_Tuple2(
+											newRow,
+											A3(elm$core$List$foldl, elm$core$Basics$or, more1, moreList1));
+									}),
+								_Utils_Tuple2(origin, false),
+								types);
+						}),
+					model,
+					top,
+					bottom));
+			var newModel = _n0.a;
+			var moreList = _n0.b;
+			var more = A3(elm$core$List$foldl, elm$core$Basics$or, false, moreList);
+			if (more) {
+				var $temp$model = newModel,
+					$temp$gameSize = gameSize;
+				model = $temp$model;
+				gameSize = $temp$gameSize;
+				continue clearZero;
+			} else {
+				return newModel;
+			}
 		}
-	}
-};
+	});
 var author$project$Cell$Mine = {$: 'Mine'};
 var elm$core$List$map = F2(
 	function (f, xs) {
@@ -5612,42 +5615,43 @@ var elm$core$Set$member = F2(
 		var dict = _n0.a;
 		return A2(elm$core$Dict$member, key, dict);
 	});
-var author$project$Main$genMap = function (mines) {
-	return A2(
-		elm$core$List$map,
-		function (row) {
-			return A2(
-				elm$core$List$map,
-				function (col) {
-					return A2(
-						elm$core$Set$member,
-						_Utils_Tuple2(row, col),
-						mines) ? {raised: false, status: author$project$Cell$Covered, value: author$project$Cell$Mine} : {
-						raised: false,
-						status: author$project$Cell$Covered,
-						value: author$project$Cell$Number(
-							elm$core$Set$size(
-								A2(
-									elm$core$Set$intersect,
-									mines,
-									elm$core$Set$fromList(
-										_List_fromArray(
-											[
-												_Utils_Tuple2(row - 1, col - 1),
-												_Utils_Tuple2(row, col - 1),
-												_Utils_Tuple2(row + 1, col - 1),
-												_Utils_Tuple2(row - 1, col),
-												_Utils_Tuple2(row + 1, col),
-												_Utils_Tuple2(row - 1, col + 1),
-												_Utils_Tuple2(row, col + 1),
-												_Utils_Tuple2(row + 1, col + 1)
-											])))))
-					};
-				},
-				A2(elm$core$List$range, 0, author$project$Main$gameSize - 1));
-		},
-		A2(elm$core$List$range, 0, author$project$Main$gameSize - 1));
-};
+var author$project$Main$genMap = F2(
+	function (mines, gameSize) {
+		return A2(
+			elm$core$List$map,
+			function (row) {
+				return A2(
+					elm$core$List$map,
+					function (col) {
+						return A2(
+							elm$core$Set$member,
+							_Utils_Tuple2(row, col),
+							mines) ? {raised: false, status: author$project$Cell$Covered, value: author$project$Cell$Mine} : {
+							raised: false,
+							status: author$project$Cell$Covered,
+							value: author$project$Cell$Number(
+								elm$core$Set$size(
+									A2(
+										elm$core$Set$intersect,
+										mines,
+										elm$core$Set$fromList(
+											_List_fromArray(
+												[
+													_Utils_Tuple2(row - 1, col - 1),
+													_Utils_Tuple2(row, col - 1),
+													_Utils_Tuple2(row + 1, col - 1),
+													_Utils_Tuple2(row - 1, col),
+													_Utils_Tuple2(row + 1, col),
+													_Utils_Tuple2(row - 1, col + 1),
+													_Utils_Tuple2(row, col + 1),
+													_Utils_Tuple2(row + 1, col + 1)
+												])))))
+						};
+					},
+					A2(elm$core$List$range, 0, gameSize - 1));
+			},
+			A2(elm$core$List$range, 0, gameSize - 1));
+	});
 var elm$core$Platform$Cmd$batch = _Platform_batch;
 var elm$core$Platform$Cmd$none = elm$core$Platform$Cmd$batch(_List_Nil);
 var author$project$Main$update = F2(
@@ -5656,7 +5660,11 @@ var author$project$Main$update = F2(
 			case 'Start':
 				var mines = msg.a;
 				return _Utils_Tuple2(
-					author$project$Main$genMap(mines),
+					_Utils_update(
+						model,
+						{
+							board: A2(author$project$Main$genMap, mines, model.gameSize)
+						}),
 					elm$core$Platform$Cmd$none);
 			case 'Action':
 				var row = msg.a;
@@ -5670,9 +5678,15 @@ var author$project$Main$update = F2(
 					function (rowID, cells) {
 						return _Utils_eq(rowID, row) ? A2(elm$core$List$indexedMap, updateCol, cells) : cells;
 					});
-				var newModel = A2(elm$core$List$indexedMap, updateRow, model);
+				var newBoard = A2(elm$core$List$indexedMap, updateRow, model.board);
 				return _Utils_Tuple2(
-					_Utils_eq(cellMsg, author$project$Cell$Open) ? author$project$Main$clearZero(newModel) : newModel,
+					_Utils_eq(cellMsg, author$project$Cell$Open) ? _Utils_update(
+						model,
+						{
+							board: A2(author$project$Main$clearZero, newBoard, model.gameSize)
+						}) : _Utils_update(
+						model,
+						{board: newBoard}),
 					elm$core$Platform$Cmd$none);
 			case 'NewGame':
 				return author$project$Main$init(elm$core$Maybe$Nothing);
@@ -5719,7 +5733,7 @@ var elm$core$List$all = F2(
 			A2(elm$core$Basics$composeL, elm$core$Basics$not, isOkay),
 			list);
 	});
-var author$project$Main$status = function (model) {
+var author$project$Main$status = function (board) {
 	return A2(
 		elm$core$List$any,
 		function (row) {
@@ -5730,7 +5744,7 @@ var author$project$Main$status = function (model) {
 				},
 				row);
 		},
-		model) ? author$project$Main$Over : (A2(
+		board) ? author$project$Main$Over : (A2(
 		elm$core$List$all,
 		function (row) {
 			return A2(
@@ -5740,7 +5754,7 @@ var author$project$Main$status = function (model) {
 				},
 				row);
 		},
-		model) ? author$project$Main$Success : author$project$Main$Normal);
+		board) ? author$project$Main$Success : author$project$Main$Normal);
 };
 var author$project$Cell$Drop = {$: 'Drop'};
 var author$project$Cell$NoOp = {$: 'NoOp'};
@@ -5946,7 +5960,7 @@ var elm$html$Html$table = _VirtualDom_node('table');
 var elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
 var elm$html$Html$Attributes$style = elm$virtual_dom$VirtualDom$style;
 var author$project$Main$view = function (model) {
-	var gameStatus = author$project$Main$status(model);
+	var gameStatus = author$project$Main$status(model.board);
 	var common = _List_fromArray(
 		[
 			A2(
@@ -5966,7 +5980,7 @@ var author$project$Main$view = function (model) {
 					_List_fromArray(
 						[
 							elm$html$Html$text(
-							'Game size: ' + (elm$core$String$fromInt(author$project$Main$gameSize) + (' x ' + elm$core$String$fromInt(author$project$Main$gameSize))))
+							'Game size: ' + (elm$core$String$fromInt(model.gameSize) + (' x ' + elm$core$String$fromInt(model.gameSize))))
 						])),
 					A2(
 					elm$html$Html$span,
@@ -5974,7 +5988,7 @@ var author$project$Main$view = function (model) {
 					_List_fromArray(
 						[
 							elm$html$Html$text(
-							'Total mines: ' + elm$core$String$fromInt(author$project$Main$mineCount)),
+							'Total mines: ' + elm$core$String$fromInt(model.mineCount)),
 							A2(
 							elm$html$Html$div,
 							_List_fromArray(
@@ -6006,7 +6020,7 @@ var author$project$Main$view = function (model) {
 			A2(
 				elm$core$List$indexedMap,
 				author$project$Main$viewCellRow(gameStatus),
-				model))
+				model.board))
 		]);
 	return {
 		body: _List_fromArray(
