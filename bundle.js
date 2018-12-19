@@ -5885,7 +5885,7 @@ var author$project$Cell$view = function (model) {
 						function () {
 							var _n1 = model.al;
 							if (!_n1.$) {
-								return '*';
+								return '💣';
 							} else {
 								var n = _n1.a;
 								return elm$core$String$fromInt(n);
