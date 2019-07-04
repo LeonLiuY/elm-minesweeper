@@ -1,3 +1,3 @@
-# elm-minesweeper [![Build Status](https://travis-ci.org/liuyang1204/elm-minesweeper.svg?branch=master)](https://travis-ci.org/liuyang1204/elm-minesweeper)
+# elm-minesweeper [![Build Status](https://travis-ci.org/leonliuy/elm-minesweeper.svg?branch=master)](https://travis-ci.org/leonliuy/elm-minesweeper)
 
-https://liuyang1204.github.io/elm-minesweeper/
+https://leonliuy.github.io/elm-minesweeper/
